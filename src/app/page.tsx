@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import {
-  ShoppingBag,
+  Eye,
   Sparkles,
   Truck,
   ShieldCheck,
@@ -14,10 +14,7 @@ import {
   X,
   CheckCircle2,
   Zap,
-  ArrowRight,
-  Plus,
-  Minus,
-  Trash2
+  ArrowRight
 } from "lucide-react";
 
 interface ProductItem {
@@ -38,9 +35,7 @@ const INITIAL_PRODUCTS: ProductItem[] = [];
 export default function SingleFileTenantStore() {
   const [products, setProducts] = useState<ProductItem[]>(INITIAL_PRODUCTS);
   const [loading, setLoading] = useState(false);
-  const [cart, setCart] = useState<{ id: string; title: string; price: number; imageUrl: string; quantity: number }[]>([]);
-  const [isCartOpen, setIsCartOpen] = useState(false);
-  const [checkoutDone, setCheckoutDone] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<ProductItem | null>(null);
 
   // Live Database Hydration via Prisma API Route
   useEffect(() => {
@@ -70,39 +65,6 @@ export default function SingleFileTenantStore() {
     loadDbProducts();
   }, []);
 
-  const addToCart = (product: ProductItem) => {
-    setCart(prev => {
-      const exists = prev.find(p => p.id === product.id);
-      if (exists) {
-        return prev.map(p => p.id === product.id ? { ...p, quantity: p.quantity + 1 } : p);
-      }
-      return [...prev, {
-        id: product.id,
-        title: product.title,
-        price: Number(product.price),
-        imageUrl: product.customFields?.imageUrl || "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800&q=80",
-        quantity: 1
-      }];
-    });
-    setIsCartOpen(true);
-  };
-
-  const updateQuantity = (id: string, delta: number) => {
-    setCart(prev => prev.map(p => {
-      if (p.id === id) {
-        const q = p.quantity + delta;
-        return q > 0 ? { ...p, quantity: q } : null;
-      }
-      return p;
-    }).filter(Boolean) as any);
-  };
-
-  const removeFromCart = (id: string) => {
-    setCart(prev => prev.filter(item => item.id !== id));
-  };
-
-  const cartTotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  const cartItemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
   const heroImage = products[0]?.customFields?.imageUrl || "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800&q=80";
 
   return (
@@ -127,27 +89,13 @@ export default function SingleFileTenantStore() {
             </div>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-6">
             <a href="#products" className="text-xs font-semibold text-slate-300 hover:text-white transition-colors">
               Collection
             </a>
             <a href="#contact" className="text-xs font-semibold text-slate-300 hover:text-white transition-colors">
               Contact
             </a>
-
-            {/* Shopping Cart Button */}
-            <button
-              type="button"
-              onClick={() => setIsCartOpen(true)}
-              className="relative p-2.5 rounded-xl bg-slate-900 border border-slate-700 hover:border-indigo-500 text-white transition-all cursor-pointer shadow-md"
-            >
-              <ShoppingBag className="w-4 h-4" />
-              {cartItemCount > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-indigo-600 text-white text-[10px] font-black flex items-center justify-center shadow-lg">
-                  {cartItemCount}
-                </span>
-              )}
-            </button>
           </div>
         </div>
       </nav>
@@ -172,7 +120,7 @@ export default function SingleFileTenantStore() {
                 href="#products"
                 className="inline-flex items-center gap-2.5 px-7 py-3.5 rounded-xl font-semibold text-white bg-indigo-600 shadow-lg shadow-indigo-500/25 hover:bg-indigo-500 transition-all cursor-pointer"
               >
-                <ShoppingBag className="w-5 h-5" />
+                <Eye className="w-5 h-5" />
                 <span>Explore Catalog</span>
                 <ArrowRight className="w-4 h-4 ml-1" />
               </a>
@@ -249,7 +197,10 @@ export default function SingleFileTenantStore() {
               key={prod.id}
               className="glass-card rounded-2xl overflow-hidden flex flex-col group border border-slate-800 hover:border-indigo-500/40 transition-all duration-300"
             >
-              <div className="relative aspect-[4/3] overflow-hidden bg-slate-900">
+              <div
+                className="relative aspect-[4/3] overflow-hidden bg-slate-900 cursor-pointer"
+                onClick={() => setSelectedProduct(prod)}
+              >
                 <img
                   src={prod.customFields?.imageUrl || "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800&q=80"}
                   alt={prod.title}
@@ -267,7 +218,10 @@ export default function SingleFileTenantStore() {
 
               <div className="p-6 flex-1 flex flex-col justify-between space-y-4">
                 <div className="space-y-2">
-                  <h3 className="text-lg font-bold text-white group-hover:text-indigo-400 transition-colors">
+                  <h3
+                    onClick={() => setSelectedProduct(prod)}
+                    className="text-lg font-bold text-white group-hover:text-indigo-400 transition-colors cursor-pointer"
+                  >
                     {prod.title}
                   </h3>
                   <p className="text-sm text-slate-400 line-clamp-2 leading-relaxed">
@@ -293,11 +247,11 @@ export default function SingleFileTenantStore() {
                   </div>
                   <button
                     type="button"
-                    onClick={() => addToCart(prod)}
+                    onClick={() => setSelectedProduct(prod)}
                     className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm transition-all shadow-md shadow-indigo-600/20 flex items-center gap-2 cursor-pointer active:scale-95"
                   >
-                    <ShoppingBag className="w-4 h-4" />
-                    <span>Add to Bag</span>
+                    <Eye className="w-4 h-4" />
+                    <span>View Details</span>
                   </button>
                 </div>
               </div>
@@ -426,112 +380,112 @@ export default function SingleFileTenantStore() {
         </div>
       </footer>
 
-      {/* Shopping Cart Drawer */}
-      {isCartOpen && (
-        <div className="fixed inset-0 z-50 flex justify-end bg-black/70 backdrop-blur-sm animate-in fade-in">
-          <div className="w-full max-w-md bg-slate-900 border-l border-slate-800 h-full flex flex-col shadow-2xl p-6">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-4">
-              <div className="flex items-center gap-2">
-                <ShoppingBag className="w-5 h-5 text-indigo-400" />
-                <h3 className="font-bold text-lg text-white">Your Shopping Bag</h3>
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsCartOpen(false)}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-white"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
+      {/* Product Detail Modal */}
+      {selectedProduct && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/80 backdrop-blur-md animate-in fade-in"
+          onClick={() => setSelectedProduct(null)}
+        >
+          <div
+            className="relative w-full max-w-3xl bg-slate-900 border border-slate-700/80 rounded-3xl overflow-hidden shadow-2xl flex flex-col md:flex-row max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close button */}
+            <button
+              type="button"
+              onClick={() => setSelectedProduct(null)}
+              className="absolute top-4 right-4 z-10 p-2 rounded-full bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white backdrop-blur-md transition-all cursor-pointer"
+              aria-label="Close modal"
+            >
+              <X className="w-5 h-5" />
+            </button>
 
-            {/* Cart Items List */}
-            <div className="flex-1 overflow-y-auto py-4 space-y-4">
-              {cart.length === 0 ? (
-                <div className="text-center py-12 text-slate-500 space-y-3">
-                  <ShoppingBag className="w-12 h-12 mx-auto text-slate-700" />
-                  <p className="text-sm font-medium">Your shopping bag is empty.</p>
+            {/* Left: Product Image */}
+            <div className="w-full md:w-1/2 bg-slate-950 flex items-center justify-center relative min-h-[280px] md:min-h-[420px]">
+              <img
+                src={
+                  selectedProduct.customFields?.imageUrl ||
+                  "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800&q=80"
+                }
+                alt={selectedProduct.title}
+                className="w-full h-full object-cover object-center max-h-[450px]"
+              />
+              {selectedProduct.customFields?.badge && (
+                <div className="absolute top-4 left-4 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-indigo-600/90 text-white backdrop-blur-md shadow-md">
+                  {selectedProduct.customFields.badge}
                 </div>
-              ) : (
-                cart.map((item) => (
-                  <div key={item.id} className="glass-card p-3 rounded-xl flex items-center gap-3">
-                    <img src={item.imageUrl} alt={item.title} className="w-14 h-14 rounded-lg object-cover bg-slate-950" />
-                    <div className="flex-1 min-w-0">
-                      <h4 className="text-xs font-bold text-white truncate">{item.title}</h4>
-                      <p className="text-xs font-semibold text-indigo-400 mt-0.5">${item.price.toFixed(2)}</p>
-                      <div className="flex items-center gap-2 mt-2">
-                        <button
-                          type="button"
-                          onClick={() => updateQuantity(item.id, -1)}
-                          className="w-6 h-6 rounded bg-slate-800 flex items-center justify-center text-slate-300 hover:bg-slate-700 text-xs"
-                        >
-                          <Minus className="w-3 h-3" />
-                        </button>
-                        <span className="text-xs font-bold text-white">{item.quantity}</span>
-                        <button
-                          type="button"
-                          onClick={() => updateQuantity(item.id, 1)}
-                          className="w-6 h-6 rounded bg-slate-800 flex items-center justify-center text-slate-300 hover:bg-slate-700 text-xs"
-                        >
-                          <Plus className="w-3 h-3" />
-                        </button>
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => removeFromCart(item.id)}
-                      className="p-1.5 text-slate-500 hover:text-rose-400"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                ))
               )}
             </div>
 
-            {/* Cart Footer */}
-            {cart.length > 0 && (
-              <div className="border-t border-slate-800 pt-4 space-y-4">
-                <div className="flex items-center justify-between text-slate-300">
-                  <span className="text-sm">Subtotal</span>
-                  <span className="text-xl font-extrabold text-white">${cartTotal.toFixed(2)}</span>
+            {/* Right: Product Information */}
+            <div className="w-full md:w-1/2 p-6 sm:p-8 flex flex-col justify-between space-y-6">
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <span className="px-2.5 py-1 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs font-bold uppercase tracking-wider">
+                    In Stock
+                  </span>
+                  {selectedProduct.customFields?.category && (
+                    <span className="px-2.5 py-1 rounded-md bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 text-xs font-bold">
+                      {selectedProduct.customFields.category}
+                    </span>
+                  )}
                 </div>
+
+                <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight leading-snug">
+                  {selectedProduct.title}
+                </h2>
+
+                <div className="flex items-baseline gap-2">
+                  <span className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-300">
+                    ${Number(selectedProduct.price || 0).toFixed(2)}
+                  </span>
+                  <span className="text-xs text-slate-400 font-medium">USD</span>
+                </div>
+
+                <div className="border-t border-slate-800 pt-4 space-y-2">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">Description</h4>
+                  <p className="text-slate-300 text-sm leading-relaxed font-normal">
+                    {selectedProduct.customFields?.description ||
+                      "Engineered with premium quality materials, designed for durability, exceptional performance, and everyday reliability."}
+                  </p>
+                </div>
+
+                {Array.isArray(selectedProduct.customFields?.features) &&
+                  selectedProduct.customFields.features.length > 0 && (
+                    <div className="border-t border-slate-800 pt-4 space-y-2.5">
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                        Key Specifications
+                      </h4>
+                      <ul className="space-y-1.5">
+                        {selectedProduct.customFields.features.map((feat: string, idx: number) => (
+                          <li key={idx} className="flex items-center gap-2 text-xs text-slate-300">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
+                            <span>{feat}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+              </div>
+
+              <div className="pt-6 border-t border-slate-800 space-y-3">
+                <a
+                  href="#contact"
+                  onClick={() => setSelectedProduct(null)}
+                  className="w-full py-3 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-sm shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2 transition-all cursor-pointer"
+                >
+                  <Mail className="w-4 h-4" />
+                  <span>Inquire About This Product</span>
+                </a>
                 <button
                   type="button"
-                  onClick={() => {
-                    setCheckoutDone(true);
-                    setCart([]);
-                  }}
-                  className="w-full py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 font-bold text-white text-sm shadow-lg shadow-indigo-600/30 transition-all"
+                  onClick={() => setSelectedProduct(null)}
+                  className="w-full py-2.5 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs transition-all cursor-pointer"
                 >
-                  Checkout Now (${cartTotal.toFixed(2)})
+                  Back to Catalog
                 </button>
               </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Checkout Success Modal */}
-      {checkoutDone && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in">
-          <div className="max-w-md w-full bg-slate-900 border border-slate-800 rounded-3xl p-6 text-center space-y-4 shadow-2xl">
-            <div className="w-14 h-14 rounded-full bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 mx-auto">
-              <CheckCircle2 className="w-7 h-7" />
             </div>
-            <h3 className="text-xl font-bold text-white">Order Placed Successfully!</h3>
-            <p className="text-xs text-slate-400">
-              Thank you for shopping at Rith coffee shop. A confirmation email and tracking link have been dispatched.
-            </p>
-            <button
-              type="button"
-              onClick={() => {
-                setCheckoutDone(false);
-                setIsCartOpen(false);
-              }}
-              className="w-full py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold"
-            >
-              Continue Browsing
-            </button>
           </div>
         </div>
       )}
